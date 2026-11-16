@@ -327,8 +327,26 @@
 
       screen.append(video, placeholder);
       card.append(heading, screen);
-      video.src = clip.file;
+      lazyLoad(video, clip.file);
       return { card, video };
+    }
+
+    // Start loading a video only when it nears the viewport, so off-screen clips don't compete for bandwidth.
+    const videoLoader = "IntersectionObserver" in window ? new IntersectionObserver(entries => {
+      for (const entry of entries) {
+        if (!entry.isIntersecting) continue;
+        videoLoader.unobserve(entry.target);
+        entry.target.src = entry.target.dataset.src;
+      }
+    }, { rootMargin: "600px 0px" }) : null;
+
+    function lazyLoad(video, file) {
+      if (!videoLoader) {
+        video.src = file;
+        return;
+      }
+      video.dataset.src = file;
+      videoLoader.observe(video);
     }
 
     function displayTime(seconds) {
